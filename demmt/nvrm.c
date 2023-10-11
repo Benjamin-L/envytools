@@ -936,6 +936,8 @@ int nvrm_ioctl_post(uint32_t fd, uint32_t id, uint8_t dir, uint8_t nr, uint16_t 
 		handle_nvrm_ioctl_memory3(fd, d);
 	else if (id == NVRM_IOCTL_MEMORY4)
 		handle_nvrm_ioctl_memory4(fd, d);
+	else
+		printf("DEBUG: unknown ioctl %x\n", id);
 
 	return r;
 }
