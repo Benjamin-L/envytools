@@ -533,6 +533,14 @@ static void decode_nvrm_mthd_context_unk021b(struct nvrm_mthd_context_unk021b *m
 	nvrm_print_ln();
 }
 
+static void decode_nvrm_mthd_context_unk0d01(struct nvrm_mthd_context_unk0d01 *m)
+{
+	nvrm_print_x32(m, handle);
+	nvrm_print_x32(m, unk04);
+	nvrm_print_x32(m, unk08);
+	nvrm_print_ln();
+}
+
 static void decode_nvrm_mthd_context_get_cpu_info(struct nvrm_mthd_context_get_cpu_info *m)
 {
 	nvrm_print_x32(m, unk00);
@@ -596,6 +604,7 @@ struct nvrm_mthd nvrm_mthds[] =
 	_(NVRM_MTHD_FIFO_IB_OBJECT_INFO3, struct nvrm_mthd_fifo_ib_object_info, decode_nvrm_mthd_fifo_ib_object_info),
 	_(NVRM_MTHD_FIFO_IB_OBJECT_INFO4, struct nvrm_mthd_fifo_ib_object_info, decode_nvrm_mthd_fifo_ib_object_info),
 	_(NVRM_MTHD_CONTEXT_UNK021B, struct nvrm_mthd_context_unk021b, decode_nvrm_mthd_context_unk021b),
+	_(NVRM_MTHD_CONTEXT_UNK0D01, struct nvrm_mthd_context_unk0d01, decode_nvrm_mthd_context_unk0d01),
 	_(NVRM_MTHD_CONTEXT_GET_CPU_INFO, struct nvrm_mthd_context_get_cpu_info, decode_nvrm_mthd_context_get_cpu_info),
 };
 #undef _

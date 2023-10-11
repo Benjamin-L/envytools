@@ -109,6 +109,13 @@ struct nvrm_mthd_context_unk021b {
 };
 #define NVRM_MTHD_CONTEXT_UNK021B 0x0000021b
 
+struct nvrm_mthd_context_unk0d01 {
+	uint32_t handle;
+	uint32_t unk04;
+	uint32_t unk08;
+};
+#define NVRM_MTHD_CONTEXT_UNK0D01 0x00000d01
+
 struct nvrm_mthd_context_unk1001 {
 	uint32_t handle;
 	uint32_t unk04;
