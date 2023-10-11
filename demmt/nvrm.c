@@ -380,6 +380,70 @@ static void handle_nvrm_ioctl_create(uint32_t fd, struct nvrm_ioctl_create *s, s
 		cid = parent = handle = ((uint32_t *)data->data)[0];
 	}
 
+	/* if (cid == 0) {
+		cid = handle;
+	}
+	if (parent == 0) {
+		parent = handle;
+	} */
+
+	check_cid(cid);
+
+	struct gpu_object *obj = nvrm_add_object(fd, cid, parent, handle, s->cls);
+	pushbuf_add_object(handle, s->cls, obj);
+
+	if (is_fifo_ib_class(s->cls))
+	{
+		if (data)
+		{
+			struct fifo_state *state = get_fifo_state(obj);
+			struct nvrm_create_fifo_ib *create_data = (void *)data->data;
+			state->ib.addr = create_data->ib_addr;
+			state->ib.entries = create_data->ib_entries;
+		}
+	}
+	else if (is_fifo_dma_class(s->cls))
+	{
+		if (data)
+		{
+			struct fifo_state *state = get_fifo_state(obj);
+			struct nvrm_create_fifo_dma *create_data = (void *)data->data;
+			state->user.addr = create_data->user_addr;
+		}
+	}
+}
+
+static void handle_nvrm_ioctl_create40(uint32_t fd, struct nvrm_ioctl_create *s, struct mmt_memory_dump *args, int argc)
+{
+	if (s->status != NVRM_STATUS_SUCCESS)
+		return;
+
+	uint32_t cid = s->cid;
+	uint32_t parent = s->parent;
+	uint32_t handle = s->handle;
+
+	struct mmt_buf *data = NULL;
+	if (s->ptr)
+		data = find_ptr(s->ptr, args, argc);
+
+	if (handle == 0)
+	{
+		if (!data || data->len < 4)
+		{
+			mmt_error("\"create cid\" without data - probably because this trace was obtained by old mmt version (before Sep 6 2014)%s\n", "");
+			cid_not_found++;
+			return;
+		}
+		cid = parent = handle = ((uint32_t *)data->data)[0];
+	}
+
+	/* if (cid == 0) {
+		cid = handle;
+	}
+	if (parent == 0) {
+		parent = handle;
+	} */
+
 	check_cid(cid);
 
 	struct gpu_object *obj = nvrm_add_object(fd, cid, parent, handle, s->cls);
@@ -826,6 +890,8 @@ int nvrm_ioctl_post(uint32_t fd, uint32_t id, uint8_t dir, uint8_t nr, uint16_t 
 
 	if (id == NVRM_IOCTL_CREATE)
 		handle_nvrm_ioctl_create(fd, d, args, argc);
+	else if (id == NVRM_IOCTL_CREATE40)
+		handle_nvrm_ioctl_create40(fd, d, args, argc);
 	else if (id == NVRM_IOCTL_CREATE_SIMPLE)
 		handle_nvrm_ioctl_create_simple(fd, d);
 	else if (id == NVRM_IOCTL_DESTROY)

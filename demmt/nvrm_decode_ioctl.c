@@ -370,6 +370,7 @@ struct nvrm_create_arg_decoder
 	void *fun;
 };
 
+// TODO: do I need to add stuff here?
 #define _(CLS, STR, FUN) { CLS, sizeof(STR), FUN }
 struct nvrm_create_arg_decoder nvrm_create_arg_decoders[] =
 {
@@ -409,6 +410,51 @@ static void decode_nvrm_ioctl_create(struct nvrm_ioctl_create *s, struct mmt_mem
 		int found = 0;
 
 		void (*fun)(struct nvrm_ioctl_create *, void *) = NULL;
+
+		struct nvrm_create_arg_decoder *dec;
+		int k;
+		for (k = 0; k < nvrm_create_arg_decoder_cnt; ++k)
+		{
+			dec = &nvrm_create_arg_decoders[k];
+			if (dec->cls == s->cls)
+			{
+				if (dec->size == data->len)
+				{
+					nvrm_reset_pfx();
+					mmt_log("        %s", "ptr[]: ");
+					fun = dec->fun;
+					if (fun)
+						fun(s, (void *)data->data);
+
+					found = 1;
+				}
+				break;
+			}
+		}
+
+		if (!found)
+			dump_mmt_buf_as_words_horiz(data, "ptr[]:");
+	}
+}
+
+static void decode_nvrm_ioctl_create40(struct nvrm_ioctl_create40 *s, struct mmt_memory_dump *args, int argc)
+{
+	nvrm_print_cid(s, cid);
+	nvrm_print_handle(s, handle, cid);
+	nvrm_print_class(s, cls);
+	nvrm_print_handle(s, parent, cid);
+	struct mmt_buf *data = nvrm_print_ptr(s, ptr, args, argc);
+	nvrm_print_status(s, status);
+	nvrm_print_pad_x32(s, _pad1);
+	nvrm_print_pad_x32(s, _pad2);
+	nvrm_print_pad_x32(s, _pad3);
+	nvrm_print_ln();
+
+	if (data)
+	{
+		int found = 0;
+
+		void (*fun)(struct nvrm_ioctl_create40 *, void *) = NULL;
 
 		struct nvrm_create_arg_decoder *dec;
 		int k;
@@ -905,6 +951,7 @@ struct nvrm_ioctl nvrm_ioctls[] =
 		_(NVRM_IOCTL_CARD_INFO2, struct nvrm_ioctl_card_info2, decode_nvrm_ioctl_card_info2),
 		_(NVRM_IOCTL_CARD_INFO3, struct nvrm_ioctl_card_info3, decode_nvrm_ioctl_card_info3),
 		_a(NVRM_IOCTL_CREATE, struct nvrm_ioctl_create, decode_nvrm_ioctl_create),
+		_a(NVRM_IOCTL_CREATE40, struct nvrm_ioctl_create40, decode_nvrm_ioctl_create40),
 		_a(NVRM_IOCTL_CALL, struct nvrm_ioctl_call, decode_nvrm_ioctl_call),
 		_a(NVRM_IOCTL_CONFIG, struct nvrm_ioctl_config, decode_nvrm_ioctl_config),
 		_(NVRM_IOCTL_CREATE_VSPACE, struct nvrm_ioctl_create_vspace, decode_nvrm_ioctl_create_vspace),
