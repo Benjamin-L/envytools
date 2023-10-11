@@ -50,25 +50,25 @@ void buffer_decode_register_write(struct cpu_mapping *mapping, uint32_t start, u
 		struct gpu_object *dev = nvrm_get_device(mapping->object);
 		int chipset = nvrm_get_chipset(dev);
 		bool ib_supported = chipset == 0x50 || chipset >= 0x80;
-		bool pb_pointer_found = nvrm_get_pb_pointer_found(dev);
 
-		if (ib_supported && !pb_pointer_found)
+		if (ib_supported && !(mapping->ib.is || mapping->user.is))
 		{
 			uint32_t idx = start / 4;
 			uint32_t *data = (uint32_t *)mapping->data;
-			if ((idx & 1) == 1 && data[idx - 1] && data[idx] && !(data[idx - 1] & 0x3))
+
+			if ((idx & 1) == 1 && idx >= 1 && data[idx - 1] && data[idx] && !(data[idx - 1] & 0x3))
 			{
 				if (gpu_addr)
 				{
 					struct gpu_object *fifo = nvrm_get_fifo(mapping->object, gpu_addr + addr, 1);
 					if (fifo && is_fifo_and_addr_belongs(fifo, gpu_addr + addr))
 					{
-						nvrm_device_set_pb_pointer_found(dev, true);
+						mapping->ib.is = 1;
 						mapping->ib.entries = get_fifo_state(fifo)->ib.entries;
 					}
 				}
 
-				if (!nvrm_get_pb_pointer_found(dev))
+				if (!mapping->ib.is)
 				{
 					uint64_t pb_gpu_addr = (((uint64_t)(data[idx] & 0xff)) << 32) | (data[idx - 1] & 0xfffffffc);
 					struct gpu_object *obj;
@@ -80,27 +80,26 @@ void buffer_decode_register_write(struct cpu_mapping *mapping, uint32_t start, u
 							if (gpu_mapping->address == pb_gpu_addr &&
 								gpu_mapping->length >=  4 * ((data[idx] & 0x7fffffff) >> 10))
 							{
-								nvrm_device_set_pb_pointer_found(dev, true);
+								mapping->ib.is = 1;
 								break;
 							}
 						}
 
-						if (nvrm_get_pb_pointer_found(dev))
+						if (mapping->ib.is)
 							break;
 					}
 				}
 
-				if (nvrm_get_pb_pointer_found(dev))
+				if (mapping->ib.is)
 				{
 					if (info && decode_pb)
 						mmt_printf("IB buffer: %d\n", mapping->id);
 
-					mapping->ib.is = 1;
 					mapping->ib.offset = start - 4;
 				}
 			}
 		}
-		else if (!pb_pointer_found)
+		else if (!(mapping->ib.is || mapping->user.is))
 		{
 			if (start == 0x40)
 			{
@@ -109,21 +108,19 @@ void buffer_decode_register_write(struct cpu_mapping *mapping, uint32_t start, u
 				{
 					struct gpu_object *fifo = nvrm_get_fifo(mapping->object, gpu_addr + addr, 1);
 					if (fifo && is_fifo_and_addr_belongs(fifo, gpu_addr + addr))
-						nvrm_device_set_pb_pointer_found(dev, true);
+						mapping->user.is = 1;
 
-					if (!nvrm_get_pb_pointer_found(dev))
+					if (!mapping->user.is)
 					{
 						struct gpu_mapping *gpu_mapping = gpu_mapping_find(pb_gpu_addr, dev);
 						if (gpu_mapping)
-							nvrm_device_set_pb_pointer_found(dev, true);
+							mapping->user.is = 1;
 					}
 
-					if (nvrm_get_pb_pointer_found(dev))
+					if (mapping->user.is)
 					{
 						if (info && decode_pb)
 							mmt_printf("USER buffer: %d\n", mapping->id);
-
-						mapping->user.is = 1;
 					}
 				}
 			}

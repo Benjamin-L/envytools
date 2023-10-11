@@ -382,5 +382,12 @@ void buffer_register_mmt_write(struct mmt_write *w)
 		if (!regions_add_range(&mapping->object->written_regions, w->offset + mapping->object_offset, w->len))
 			demmt_abort();
 
-	buffer_decode_register_write(mapping, w->offset, w->len);
+	// One word at-a-time, so that IB detection works?
+	uint32_t start = w->offset;
+	for (; start < w->offset + w->len; start+=4) {
+		buffer_decode_register_write(mapping, start, 4);
+	}
+	if (w->len - start > 0) {
+		buffer_decode_register_write(mapping, start, w->len - start);
+	}
 }
